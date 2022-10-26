@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AskDemo</string>
+    <string name="initialisation">Initialisation</string>
+    <string name="scanning">Scanning...</string>
+</resources>
