@@ -1,5 +1,6 @@
 package fr.coppernic.tools.askdemo.data.datasource
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import fr.coppernic.sdk.ask.DesfireStatus
@@ -32,13 +33,10 @@ class BadgeDataSource {
     var lastTag: RfidTag? = null
     private var lastScan: Long = 0
     private var _reader: Reader? = null
-    val powerManager: PowerManager by lazy {
-        PowerManager.get()
-    }
 
     fun getData(): Flow<Result<AskBadge>> = flow {
         val ctx = App.components.applicationContext
-        powerOn(ctx)
+        power(ctx, true)
         prepareReader(ctx)?.also {
             openReader(it)
             resetReader(it)
@@ -67,13 +65,13 @@ class BadgeDataSource {
             }
             closeReader(it)
         }
-        powerOff(ctx)
+        power(ctx, false)
     }
 
     //region READ BADGE
 
     private fun readCardData(rfidTag: RfidTag?, reader: Reader): AskBadge? {
-        val data: String? = null
+        var data: String? = null
         var result: Int
         val desfireStatus = DesfireStatus(DesfireStatus.Status.RCSC_DESFIRE_TIMEOUT)
 
@@ -82,7 +80,7 @@ class BadgeDataSource {
         // Get the uid
         val uid: ByteArray? = reader.cscMifareDesfireGetUID(desfireStatus)
 
-        /*
+
         // Select the application
         result = reader.cscMifareDesfireSelectApplication(CpcBytes.parseHexStringToArray(MIFARE_AID), desfireStatus)
         if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
@@ -117,13 +115,14 @@ class BadgeDataSource {
             dataRead
         )
 
-        val data = if (result == fr.coppernic.sdk.ask.Defines.RCSC_Ok && desfireStatus.status == DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
-            if (dataRead.isNotEmpty()) { CpcBytes.byteArrayToString(dataRead) }
-            else null
+        data = if (result == fr.coppernic.sdk.ask.Defines.RCSC_Ok &&
+            desfireStatus.status == DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK &&
+            dataRead.isNotEmpty()) {
+            CpcBytes.byteArrayToString(dataRead)
         } else {
             null
         }
-        */
+
 
         if (uid != null) {
             return AskBadge(CpcBytes.byteArrayToString(uid).removeWhitespaces(), data)
@@ -135,31 +134,12 @@ class BadgeDataSource {
 
     //endregion
 
-
-
     //region POWER
 
-    private suspend fun powerOn(context: Context) = suspendCoroutine<Result<Unit>> { continuation ->
-        // Register the power listener
-        powerManager.powerOn(context, AccessPeripheral.RFID_ASK_UCM108_GPIO)
-        powerManager.registerListener(object : PowerListener {
-            override fun onPowerUp(res: CpcResult.RESULT?, peripheral: Peripheral?) {
-                powerManager.unregisterListener(this)
-                if (res == CpcResult.RESULT.OK) {
-                    continuation.resume(Result.success(Unit))
-                } else {
-                    continuation.resume(Result.failure(Throwable("Unable to power on")))
-                }
-            }
-            override fun onPowerDown(res: CpcResult.RESULT?, peripheral: Peripheral?) {}
-        })
-    }
-
-    suspend fun powerOff(context: Context) = withContext(Dispatchers.IO) {
-        with(powerManager) {
-            powerOff(context, AccessPeripheral.RFID_ASK_UCM108_GPIO)
-            releaseAndUnregister()
-        }
+    @SuppressLint("CheckResult")
+    private suspend fun power(context: Context, on: Boolean) = suspendCoroutine { continuation ->
+        PERIPHERAL.descriptor.power(context, on)
+            .subscribe({ continuation.resume(it) }, { CpcResult.RESULT.ERROR.message = "Unable to power" + if(on) "on" else "off" })
     }
 
     //endregion
@@ -293,12 +273,15 @@ class BadgeDataSource {
         }
     }
 
-    fun String.removeWhitespaces() = replace(" ", "")
+    private fun String.removeWhitespaces() = filterNot { it.isWhitespace() }
 
     //endregion
 
     companion object {
-        // General
+        // Reader device
+        val PERIPHERAL: Peripheral = AccessPeripheral.RFID_ASK_UCM108_GPIO
+
+        // General settings
         const val BAUDRATE = 115200
         const val FORGET = 0x01.toByte()
         const val TIMEOUT = 0x00.toByte()

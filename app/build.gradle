@@ -41,10 +41,6 @@ dependencies {
     implementation 'fr.coppernic.sdk.core:CpcCore:2.1.8'
     implementation 'fr.coppernic.sdk.ask:CpcAsk:4.0.1'
 
-    // RxJava
-    implementation "io.reactivex.rxjava2:rxjava:2.2.10"
-    implementation "io.reactivex.rxjava2:rxandroid:2.1.1"
-
     // Lifecycle
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
@@ -55,7 +51,6 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
     // AndroidX
-    implementation "androidx.cardview:cardview:1.0.0"
     implementation 'androidx.work:work-runtime-ktx:2.7.1'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
