@@ -45,7 +45,7 @@ class BadgeDataSource {
             }
             while (currentCoroutineContext().isActive) {
                 val result = tryToDetectACard(it)
-                if (result.isSuccess && result.getOrNull()?.communicationMode == RfidTag.CommunicationMode.Iso14443A) {
+                if (result.isSuccess) {
                     result.getOrNull()?.let { tag ->
                         if(tag.atr?.contentEquals(lastTag?.atr) == false || System.currentTimeMillis() > lastScan + 2000) {
                             readCardData(tag, it)?.let { badge ->
@@ -78,9 +78,9 @@ class BadgeDataSource {
         reader.cscResetCsc(false)
 
         // Get the uid
-        val uid: ByteArray? = reader.cscMifareDesfireGetUID(desfireStatus)
+        val uid = rfidTag?.atr?.let { getUidFromAtrAsString(it).trim() }
 
-
+        /*
         // Select the application
         result = reader.cscMifareDesfireSelectApplication(CpcBytes.parseHexStringToArray(MIFARE_AID), desfireStatus)
         if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
@@ -123,13 +123,10 @@ class BadgeDataSource {
             null
         }
 
-
-        if (uid != null) {
-            return AskBadge(CpcBytes.byteArrayToString(uid).removeWhitespaces(), data)
-        } else if (rfidTag?.atr?.isNotEmpty() == true) {
-            return AskBadge(getUidFromAtrAsString(rfidTag.atr).trim(), data)
+        */
+        return uid?.let {
+            return AskBadge(it, data)
         }
-        return null
     }
 
     //endregion
@@ -199,7 +196,7 @@ class BadgeDataSource {
             INNO = 1
             ISOA = 1
             ISOB = 1
-            MIFARE = 1
+            MIFARE = 1  // warning : should be 0 for RandomId card to enable ISO level 4 features in ParagonId stack
             MONO = 1
             MV4k = 1
             MV5k = 1
@@ -242,7 +239,7 @@ class BadgeDataSource {
 
     //endregion
 
-    //region Util
+    //region Utils
 
     private fun getUidFromAtrAsString(atr: ByteArray): String {
 

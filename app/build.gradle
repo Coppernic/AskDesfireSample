@@ -14,12 +14,17 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        signingConfig signingConfigs.debug
+        archivesBaseName = "AskDesfireSample-$versionName"
     }
 
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            proguardFiles 'proguard-rules.pro'
         }
     }
     compileOptions {
@@ -38,8 +43,8 @@ dependencies {
 
     // Coppernic
     implementation 'fr.coppernic.sdk.cpcutils:CpcUtilsLib:6.19.1'
-    implementation 'fr.coppernic.sdk.core:CpcCore:2.1.8'
-    implementation 'fr.coppernic.sdk.ask:CpcAsk:4.0.1'
+    implementation 'fr.coppernic.sdk.core:CpcCore:2.1.12'
+    implementation 'fr.coppernic.sdk.ask:CpcAsk:mifare-desfire-random-id'
 
     // Lifecycle
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'

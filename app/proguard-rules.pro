@@ -1,6 +1,9 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
+
+-optimizationpasses 5
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
 #
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
@@ -19,3 +22,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+#-keep class fr.coppernic.sdk.** { *; }
+
+-keepclassmembers class * extends android.content.Context {
+    public void *(android.view.View);
+    public void *(android.view.MenuItem);
+ }
