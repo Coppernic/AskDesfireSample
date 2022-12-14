@@ -23,7 +23,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-#-keep class fr.coppernic.sdk.** { *; }
+-keep class !fr.coppernic.sdk.ask.**, fr.coppernic.sdk.** { *; }
 
 -keepclassmembers class * extends android.content.Context {
     public void *(android.view.View);
