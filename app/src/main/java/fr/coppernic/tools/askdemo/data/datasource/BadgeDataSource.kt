@@ -6,10 +6,9 @@ import android.util.Log
 import fr.coppernic.sdk.ask.DesfireStatus
 import fr.coppernic.sdk.ask.Reader
 import fr.coppernic.sdk.ask.RfidTag
+import fr.coppernic.sdk.ask.crypto.Utils
 import fr.coppernic.sdk.ask.sCARD_SearchExt
 import fr.coppernic.sdk.core.Defines
-import fr.coppernic.sdk.power.PowerManager
-import fr.coppernic.sdk.power.api.PowerListener
 import fr.coppernic.sdk.power.api.peripheral.Peripheral
 import fr.coppernic.sdk.power.impl.access.AccessPeripheral
 import fr.coppernic.sdk.utils.core.CpcBytes
@@ -26,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 class BadgeDataSource {
 
@@ -41,7 +41,7 @@ class BadgeDataSource {
             openReader(it)
             resetReader(it)
             getReaderVersion(it).also { version ->
-                Log.d("ASK READER", version)
+                Timber.tag("BadgeDataSource").d(version)
             }
             while (currentCoroutineContext().isActive) {
                 val result = tryToDetectACard(it)
@@ -80,10 +80,19 @@ class BadgeDataSource {
         // Get the uid
         val uid = rfidTag?.atr?.let { getUidFromAtrAsString(it).trim() }
 
-        // Select the application
-        result = reader.cscMifareDesfireSelectApplication(CpcBytes.parseHexStringToArray(MIFARE_AID), desfireStatus)
+        // Select the application with ParagonId API
+        val aid = CpcBytes.parseHexStringToArray(MIFARE_AID)
+        result = reader.cscMifareDesfireSelectApplication(aid, desfireStatus)
         if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
             return null
+        }
+
+        // Select application with APDU
+        val buffer = ByteArray(32)
+        val status = DesfireStatus(DesfireStatus.Status.RCSC_DESFIRE_TIMEOUT)
+        reader.cscISOCommand(byteArrayOf(0x90.toByte(), 0x5A.toByte(), 0x00, 0x00, 0x03, aid[2], aid[1], aid[0], 0x00), 9, buffer, intArrayOf(32))
+        if (Utils.checkDesfireStatus(buffer, byteArrayOf(0x91.toByte(), 0x00.toByte()), 1, status)) {
+            Timber.tag("BadgeDataSource").d("Application selected")
         }
 
         // Get file settings to get the commMode (PLAIN, MACED or ENCIPHERED) and size
