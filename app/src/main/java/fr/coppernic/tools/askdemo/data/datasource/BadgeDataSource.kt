@@ -80,7 +80,6 @@ class BadgeDataSource {
         // Get the uid
         val uid = rfidTag?.atr?.let { getUidFromAtrAsString(it).trim() }
 
-        /*
         // Select the application
         result = reader.cscMifareDesfireSelectApplication(CpcBytes.parseHexStringToArray(MIFARE_AID), desfireStatus)
         if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
@@ -123,7 +122,6 @@ class BadgeDataSource {
             null
         }
 
-        */
         return uid?.let {
             return AskBadge(it, data)
         }
@@ -189,6 +187,22 @@ class BadgeDataSource {
         return@withContext versionSb.toString()
     }
     private suspend fun tryToDetectACard(reader: Reader) = suspendCoroutine<Result<RfidTag?>> { continuation ->
+
+        // Configure Hunt Phase
+        reader.cscEnterHuntPhaseParameters(
+            0x01.toByte(),
+            0x00.toByte(),
+            0x00.toByte(),
+            0x00.toByte(),
+            0x01.toByte(),
+            0x00.toByte(),
+            0x00.toByte(),
+            0x00.toByte(),
+            null,
+            0x00.toByte().toShort(),
+            0x00.toByte()
+        )
+
         // Specify the tag search parameters
         val search = sCARD_SearchExt().apply {
             OTH = 1
@@ -286,9 +300,9 @@ class BadgeDataSource {
         const val DELAY_BETWEEN_READS_MILLISECONDS = 200L
 
         // Mifare card details
-        const val MIFARE_AID = "F51010"
+        const val MIFARE_AID = "F54090"
         const val MIFARE_FILE_NO = 0x0
-        const val MIFARE_PICC_KEY = "11111111111111111111111111111111"
+        const val MIFARE_PICC_KEY = "22222222222222222222222222222222"
         const val MIFARE_PICC_KEY_NUM = 0x01
     }
 }
