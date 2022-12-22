@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import fr.coppernic.tools.askdemo.R
+import fr.coppernic.tools.askdemo.data.datasource.CardReader
 import fr.coppernic.tools.askdemo.databinding.ActivityMainBinding
 import fr.coppernic.tools.askdemo.domain.model.AskBadge
 
@@ -31,6 +32,9 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         mainViewModel.startProcess()
+
+        // Example of pure java implementation
+        //CardReader().scan(applicationContext)
     }
 
     override fun onStop() {
