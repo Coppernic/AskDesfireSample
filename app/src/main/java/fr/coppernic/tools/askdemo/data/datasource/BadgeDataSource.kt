@@ -88,12 +88,14 @@ class BadgeDataSource {
         }
 
         // Select application with APDU
+        /*
         val buffer = ByteArray(32)
         val status = DesfireStatus(DesfireStatus.Status.RCSC_DESFIRE_TIMEOUT)
         reader.cscISOCommand(byteArrayOf(0x90.toByte(), 0x5A.toByte(), 0x00, 0x00, 0x03, aid[2], aid[1], aid[0], 0x00), 9, buffer, intArrayOf(32))
         if (Utils.checkDesfireStatus(buffer, byteArrayOf(0x91.toByte(), 0x00.toByte()), 1, status)) {
             Timber.tag("BadgeDataSource").d("Application selected")
         }
+        */
 
         // Get file settings to get the commMode (PLAIN, MACED or ENCIPHERED) and size
         val fsettings = ByteArray(17)
@@ -105,11 +107,73 @@ class BadgeDataSource {
         val size = fsettings[6].toInt()
         val dataRead = ByteArray(size)
 
-        // Authenticate on PICC
+        // Case 1 : Simple authentication on a PICC with a provided key
         result = reader.cscMifareDesfireAuthenticateEV1_WithoutSAM(desfireStatus, CpcBytes.parseHexStringToArray(MIFARE_PICC_KEY), MIFARE_PICC_KEY_NUM.toByte())
         if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
             return null
         }
+
+        // Case 2 : Mutual Authentication between a SAM and PICC without diversification (PICC key located in the SAM)
+        /*
+        result = reader.cscMifareDesfireAuthenticateEV1_WithSAM(
+            0x01,
+            MIFARE_PICC_KEY_NUM.toByte(),
+            CpcBytes.parseHexStringToArray(SAM_HOST_KEY),
+            SAM_KEY_NUM.toByte(),
+            SAM_KEY_VER.toByte(),
+            MIFARE_KEY_NUM.toByte(),
+            MIFARE_KEY_VER.toByte(),
+            CpcBytes.parseHexStringToArray(uid),
+            aid,
+            null,
+            desfireStatus
+        )
+        if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
+            return null
+        }
+        */
+
+        // Case 3 : Mutual Authentication between a SAM and PICC with diversification (PICC key located in the SAM)
+        /*
+        result = reader.cscMifareDesfireAuthenticateEV1_WithSAM(
+            0x01,
+            MIFARE_PICC_KEY_NUM.toByte(),
+            CpcBytes.parseHexStringToArray(SAM_HOST_KEY),
+            SAM_KEY_NUM.toByte(),
+            SAM_KEY_VER.toByte(),
+            MIFARE_KEY_NUM.toByte(),
+            MIFARE_KEY_VER.toByte(),
+            CpcBytes.parseHexStringToArray(uid),
+            aid,
+            byteArrayOf(),
+            desfireStatus
+        )
+        if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
+            return null
+        }
+        */
+
+        // Case 4 : Mutual Authentication between a SAM and a RandomID PICC
+        /*
+        result = reader.cscMifareDesfireAuthenticateEV1_RandomIdWithSAM(
+            0x01,
+            CpcBytes.parseHexStringToArray(SAM_HOST_KEY),
+            SAM_KEY_NUM.toByte(),
+            SAM_KEY_VER.toByte(),
+            MIFARE_PICC_KEY_NUM_N0_DIV.toByte(),
+            MIFARE_KEY_NUM_N0_DIV.toByte(),
+            MIFARE_KEY_VER_N0_DIV.toByte(),
+            MIFARE_PICC_KEY_NUM.toByte(),
+            MIFARE_KEY_NUM.toByte(),
+            MIFARE_KEY_VER.toByte(),
+            aid,
+            byteArrayOf(),
+            desfireStatus
+        )
+        if (result != fr.coppernic.sdk.ask.Defines.RCSC_Ok || desfireStatus.status != DesfireStatus.Status.RCSC_DESFIRE_OPERATION_OK) {
+            return null
+        }
+        */
 
         // Read and decode data
         val fromOffset = byteArrayOf(0x00, 0x00, 0x00)
@@ -309,9 +373,20 @@ class BadgeDataSource {
         const val DELAY_BETWEEN_READS_MILLISECONDS = 200L
 
         // Mifare card details
-        const val MIFARE_AID = "F54090"
-        const val MIFARE_FILE_NO = 0x0
-        const val MIFARE_PICC_KEY = "22222222222222222222222222222222"
+        const val MIFARE_PICC_KEY = "AB000000000000000000000000000041"
+        const val MIFARE_AID = "000004"
+        const val MIFARE_FILE_NO = 0x01
         const val MIFARE_PICC_KEY_NUM = 0x01
+        const val MIFARE_KEY_NUM = 0x15
+        const val MIFARE_KEY_VER = 0x01
+        const val MIFARE_PICC_KEY_NUM_N0_DIV = 0x08
+        const val MIFARE_KEY_NUM_N0_DIV = 0x14
+        const val MIFARE_KEY_VER_N0_DIV = 0x0
+
+        // SAM details
+        const val SAM_HOST_KEY = "AB000000000000000000000000000010"
+        const val SAM_KEY_NUM = 0x01
+        const val SAM_KEY_VER = 0x0
+
     }
 }
